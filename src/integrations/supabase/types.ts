@@ -14,16 +14,154 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      carnet_users: {
+        Row: {
+          active: boolean
+          birth_date: string
+          created_at: string
+          document_number: string
+          fiscal_municipality: string
+          id: string
+          insurance_start: string
+          insurer: string
+          itv_expiry: string
+          label: string | null
+          licence_a1: string
+          licence_am: string
+          licence_b: string
+          licence_expiry: string
+          name: string
+          photo_url: string | null
+          photo_x: number
+          photo_y: number
+          photo_zoom: number
+          plate: string
+          points: number
+          registration_date: string
+          slug: string
+          surname: string
+          updated_at: string
+          vehicle_model: string
+        }
+        Insert: {
+          active?: boolean
+          birth_date?: string
+          created_at?: string
+          document_number?: string
+          fiscal_municipality?: string
+          id?: string
+          insurance_start?: string
+          insurer?: string
+          itv_expiry?: string
+          label?: string | null
+          licence_a1?: string
+          licence_am?: string
+          licence_b?: string
+          licence_expiry?: string
+          name?: string
+          photo_url?: string | null
+          photo_x?: number
+          photo_y?: number
+          photo_zoom?: number
+          plate?: string
+          points?: number
+          registration_date?: string
+          slug: string
+          surname?: string
+          updated_at?: string
+          vehicle_model?: string
+        }
+        Update: {
+          active?: boolean
+          birth_date?: string
+          created_at?: string
+          document_number?: string
+          fiscal_municipality?: string
+          id?: string
+          insurance_start?: string
+          insurer?: string
+          itv_expiry?: string
+          label?: string | null
+          licence_a1?: string
+          licence_am?: string
+          licence_b?: string
+          licence_expiry?: string
+          name?: string
+          photo_url?: string | null
+          photo_x?: number
+          photo_y?: number
+          photo_zoom?: number
+          plate?: string
+          points?: number
+          registration_date?: string
+          slug?: string
+          surname?: string
+          updated_at?: string
+          vehicle_model?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_carnet_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          birth_date: string
+          document_number: string
+          fiscal_municipality: string
+          insurance_start: string
+          insurer: string
+          itv_expiry: string
+          licence_a1: string
+          licence_am: string
+          licence_b: string
+          licence_expiry: string
+          name: string
+          photo_url: string
+          photo_x: number
+          photo_y: number
+          photo_zoom: number
+          plate: string
+          points: number
+          registration_date: string
+          surname: string
+          vehicle_model: string
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +288,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const
