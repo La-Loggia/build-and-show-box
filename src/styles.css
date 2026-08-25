@@ -1744,3 +1744,55 @@ button { color: inherit; }
 .admin-photo img { width: 110px; height: 140px; object-fit: cover; border-radius: 12px; background: #0b1b2c; }
 .admin-photo > div { flex: 1; min-width: 220px; display: grid; gap: 8px; }
 .admin-message { font-size: 13px; color: #8ec5ff; margin: 0 0 12px; }
+.admin-back { display: none; }
+
+/* ===== Adaptación móvil del panel ===== */
+@media (max-width: 720px) {
+  .admin-shell { padding: 16px 12px calc(96px + env(safe-area-inset-bottom)); }
+  .admin-card { padding: 14px; border-radius: 16px; }
+  .admin-topbar { gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+  .admin-topbar h1 { font-size: 20px; }
+  .admin-topbar p { font-size: 13px; }
+  .admin-topbar__actions { width: 100%; justify-content: space-between; }
+  .admin-topbar__actions .admin-primary { flex: 1; padding: 12px 14px; }
+
+  /* Una sola vista a la vez: lista o editor */
+  .admin-layout.is-editing .admin-list { display: none; }
+  .admin-layout:not(.is-editing) .admin-editor { display: none; }
+
+  .admin-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: 0; color: #8ec5ff; font-size: 15px;
+    padding: 4px 0; cursor: pointer;
+  }
+
+  .admin-list__item { padding: 12px; }
+  .admin-list__item > button { min-height: 44px; }
+  .admin-list__item strong { font-size: 16px; }
+  .admin-list__buttons button { padding: 10px 8px; font-size: 13px; min-height: 44px; }
+
+  .admin-grid { grid-template-columns: 1fr; gap: 10px; }
+  .admin-field input, .admin-auth__form input { font-size: 16px; padding: 12px; }
+  .admin-linkrow { flex-direction: column; }
+  .admin-linkrow button { padding: 12px; }
+
+  .admin-photo { gap: 12px; }
+  .admin-photo img { width: 88px; height: 112px; }
+  .admin-photo > div { min-width: 0; flex-basis: 100%; }
+  .admin-photo input[type="range"] { width: 100%; height: 28px; }
+  .admin-photo input[type="file"] { font-size: 13px; max-width: 100%; }
+
+  /* Barra de guardado fija */
+  .admin-editor__actions {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: rgba(11, 27, 44, 0.96);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    justify-content: space-between;
+  }
+  .admin-editor__actions .admin-primary { flex: 1; padding: 14px; font-size: 15px; }
+
+  .admin-auth { padding: 16px; }
+  .admin-auth__form .admin-primary { padding: 14px; }
+}
+
