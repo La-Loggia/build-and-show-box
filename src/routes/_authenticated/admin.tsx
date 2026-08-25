@@ -193,7 +193,7 @@ function AdminPage() {
 
       {message && <p className="admin-message" role="status">{message}</p>}
 
-      <div className="admin-layout">
+      <div className={`admin-layout ${draft ? "is-editing" : ""}`}>
         <aside className="admin-card admin-list">
           {loading && <p>Cargando…</p>}
           {!loading && users.length === 0 && <p>Todavía no hay usuarios.</p>}
@@ -217,7 +217,9 @@ function AdminPage() {
             <p>Selecciona un usuario para editar su información.</p>
           ) : (
             <>
+              <button className="admin-back" type="button" onClick={() => setSelectedId(null)}>← Volver a la lista</button>
               <div className="admin-editor__head">
+
                 <h2>{draft.label}</h2>
                 <label className="admin-switch">
                   <input type="checkbox" checked={draft.active} onChange={(e) => update("active", e.target.checked)} />
