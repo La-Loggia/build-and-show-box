@@ -561,6 +561,7 @@ function PersonalizeSheet({
   function submit(event: FormEvent) {
     event.preventDefault();
     onSave({
+      ...draft,
       name: draft.name.trim() || DEFAULT_PROFILE.name,
       surname: draft.surname.trim() || DEFAULT_PROFILE.surname,
       plate: draft.plate.trim().toUpperCase() || DEFAULT_PROFILE.plate,
@@ -827,9 +828,10 @@ function MiCarnetApp() {
 }
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    u: typeof search.u === "string" && search.u ? search.u : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { u?: string } => {
+    const value = search['u'];
+    return typeof value === "string" && value ? { u: value } : {};
+  },
   head: () => ({
     meta: [
       { title: "miDGT UI — Proyecto de portfolio" },
