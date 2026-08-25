@@ -693,14 +693,23 @@ function SideMenu({ onClose, onNavigate }: { onClose: () => void; onNavigate: (v
   );
 }
 
+type LoadState = "idle" | "loading" | "ready" | "blocked";
+
 function MiCarnetApp() {
+  const { u } = Route.useSearch();
   const [entryStage, setEntryStage] = useState<EntryStage>("access");
   const [view, setView] = useState<View>("inicio");
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
-  const [profilePhotoSrc, setProfilePhotoSrc] = useState("/profile-photo.jpg");
-  const [profilePhotoCrop, setProfilePhotoCrop] = useState<PhotoCrop>(DEFAULT_PHOTO_CROP);
+  const [loadState, setLoadState] = useState<LoadState>(u ? "loading" : "idle");
   const [editing, setEditing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const managed = Boolean(u);
+  const profilePhotoSrc = profile.photoUrl;
+  const profilePhotoCrop = useMemo<PhotoCrop>(
+    () => normalizePhotoCrop({ zoom: profile.photoZoom, x: profile.photoX, y: profile.photoY }),
+    [profile.photoZoom, profile.photoX, profile.photoY],
+  );
 
   useEffect(() => {
     APP_IMAGE_ASSETS.forEach((src) => {
@@ -711,17 +720,40 @@ function MiCarnetApp() {
   }, []);
 
   useEffect(() => {
+    if (!u) return;
+    let cancelled = false;
+    setLoadState("loading");
+    void supabase
+      .rpc("get_carnet_by_slug", { _slug: u })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        const row = (data as CarnetRow[] | null)?.[0];
+        if (error || !row) {
+          setLoadState("blocked");
+          return;
+        }
+        setProfile(rowToCarnet(row));
+        setLoadState("ready");
+      });
+    return () => { cancelled = true; };
+  }, [u]);
+
+  useEffect(() => {
+    if (u) return;
     const saved = window.localStorage.getItem("mi-carnet-profile-v4");
     if (saved) {
-      try { setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(saved) }); } catch { /* Ignore invalid local data. */ }
+      try { setProfile((current) => ({ ...current, ...JSON.parse(saved) })); } catch { /* Ignore invalid local data. */ }
     }
     const savedPhoto = window.localStorage.getItem("mi-carnet-profile-photo-v1");
-    if (savedPhoto) setProfilePhotoSrc(savedPhoto);
+    if (savedPhoto) setProfile((current) => ({ ...current, photoUrl: savedPhoto }));
     const savedCrop = window.localStorage.getItem("mi-carnet-profile-crop-v1");
     if (savedCrop) {
-      try { setProfilePhotoCrop(normalizePhotoCrop(JSON.parse(savedCrop))); } catch { /* Ignore invalid local data. */ }
+      try {
+        const crop = normalizePhotoCrop(JSON.parse(savedCrop));
+        setProfile((current) => ({ ...current, photoZoom: crop.zoom, photoX: crop.x, photoY: crop.y }));
+      } catch { /* Ignore invalid local data. */ }
     }
-  }, []);
+  }, [u]);
 
   useEffect(() => {
     if (entryStage !== "loading") return;
@@ -735,14 +767,11 @@ function MiCarnetApp() {
   const viewLabel = useMemo(() => view === "vehiculo-detalle" ? "Detalle del vehículo" : view === "permiso-circulacion" ? "Permiso de circulación" : navItems.find((item) => item.id === view)?.label ?? "Inicio", [view]);
 
   function saveProfile(next: Profile, crop: PhotoCrop, photoDataUrl?: string) {
-    setProfile(next);
-    setProfilePhotoCrop(crop);
-    window.localStorage.setItem("mi-carnet-profile-v4", JSON.stringify(next));
+    const merged: Profile = { ...next, photoZoom: crop.zoom, photoX: crop.x, photoY: crop.y, photoUrl: photoDataUrl ?? next.photoUrl };
+    setProfile(merged);
+    window.localStorage.setItem("mi-carnet-profile-v4", JSON.stringify({ name: merged.name, surname: merged.surname, plate: merged.plate, points: merged.points }));
     window.localStorage.setItem("mi-carnet-profile-crop-v1", JSON.stringify(crop));
-    if (photoDataUrl) {
-      setProfilePhotoSrc(photoDataUrl);
-      window.localStorage.setItem("mi-carnet-profile-photo-v1", photoDataUrl);
-    }
+    if (photoDataUrl) window.localStorage.setItem("mi-carnet-profile-photo-v1", photoDataUrl);
     setEditing(false);
   }
 
@@ -757,20 +786,30 @@ function MiCarnetApp() {
 
       <div className="phone-shell">
         <div className="phone-hardware" aria-hidden="true"><span className="camera" /><span className="speaker" /></div>
-        <div className={`phone-screen ${entryStage !== "app" ? "phone-screen--entry" : view === "inicio" ? "phone-screen--home" : "phone-screen--vehicle"}`}>
-          {entryStage !== "app" ? (
-            <EntryScreen name={profile.name} loading={entryStage === "loading"} onAccess={() => setEntryStage("loading")} />
+        <div className={`phone-screen ${entryStage !== "app" || loadState === "blocked" ? "phone-screen--entry" : view === "inicio" ? "phone-screen--home" : "phone-screen--vehicle"}`}>
+          {loadState === "blocked" ? (
+            <div className="entry-screen">
+              <div className="entry-brand"><DgtLogo className="entry-brand-logo" /></div>
+              <h1>Acceso no disponible</h1>
+              <p>Este enlace no es válido o el acceso está desactivado.</p>
+            </div>
+          ) : entryStage !== "app" || loadState === "loading" ? (
+            <EntryScreen
+              name={profile.name}
+              loading={entryStage === "loading" || loadState === "loading"}
+              onAccess={() => setEntryStage("loading")}
+            />
           ) : (
             <>
               {view === "inicio" && <AppHeader isHome onMenu={() => setMenuOpen(true)} />}
               <div className={`screen-viewport ${view === "inicio" ? "screen-viewport--home" : "screen-viewport--vehicle"}`} key={view}>
-                {view === "inicio" && <HomeScreen profile={profile} photoSrc={profilePhotoSrc} photoCrop={profilePhotoCrop} onNavigate={setView} onEdit={() => setEditing(true)} />}
+                {view === "inicio" && <HomeScreen profile={profile} photoSrc={profilePhotoSrc} photoCrop={profilePhotoCrop} onNavigate={setView} onEdit={() => { if (!managed) setEditing(true); }} />}
                 {view === "carnet" && <LicenseScreen profile={profile} photoSrc={profilePhotoSrc} photoCrop={profilePhotoCrop} onBack={() => setView("inicio")} />}
                 {view === "vehiculo" && <VehicleScreen profile={profile} onOpen={() => setView("vehiculo-detalle")} />}
                 {view === "vehiculo-detalle" && <VehicleDetailScreen profile={profile} onBack={() => setView("vehiculo")} onOpenPermit={() => setView("permiso-circulacion")} />}
                 {view === "permiso-circulacion" && <PermitScreen profile={profile} onClose={() => setView("vehiculo-detalle")} />}
               </div>
-              {editing && <PersonalizeSheet profile={profile} photoSrc={profilePhotoSrc} photoCrop={profilePhotoCrop} onClose={() => setEditing(false)} onSave={saveProfile} />}
+              {editing && !managed && <PersonalizeSheet profile={profile} photoSrc={profilePhotoSrc} photoCrop={profilePhotoCrop} onClose={() => setEditing(false)} onSave={saveProfile} />}
               {menuOpen && <SideMenu onClose={() => setMenuOpen(false)} onNavigate={setView} />}
             </>
           )}
@@ -788,6 +827,9 @@ function MiCarnetApp() {
 }
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    u: typeof search.u === "string" && search.u ? search.u : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "miDGT UI — Proyecto de portfolio" },
@@ -800,3 +842,4 @@ export const Route = createFileRoute("/")({
   }),
   component: MiCarnetApp,
 });
+
