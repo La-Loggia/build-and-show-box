@@ -1,15 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_CARNET, rowToCarnet, type CarnetData, type CarnetRow } from "@/lib/carnet";
 import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type View = "inicio" | "carnet" | "vehiculo" | "vehiculo-detalle" | "permiso-circulacion";
 type EntryStage = "access" | "loading" | "app";
 
-type Profile = {
-  name: string;
-  surname: string;
-  plate: string;
-  points: number;
-};
+type Profile = CarnetData;
 
 type PhotoCrop = {
   zoom: number;
@@ -17,36 +14,12 @@ type PhotoCrop = {
   y: number;
 };
 
-const DEFAULT_PROFILE: Profile = {
-  name: "Carlos",
-  surname: "Medina",
-  plate: "8263 JTR",
-  points: 13,
-};
+const DEFAULT_PROFILE: Profile = DEFAULT_CARNET;
 
 const DEFAULT_PHOTO_CROP: PhotoCrop = {
   zoom: 1,
   x: 0,
   y: 0,
-};
-
-const DRIVER_DATA = {
-  birthDate: "29/09/2006",
-  documentNumber: "51255926N",
-  licenceExpiry: "21/03/2035",
-  licenceIssued: {
-    AM: "07/05/2022",
-    A1: "13/01/2024",
-    B: "21/03/2025",
-  },
-};
-
-const VEHICLE_DATA = {
-  registrationDate: "03/11/2016",
-  itvExpiry: "03/11/2026",
-  insurer: "MUTUA LEVANTE",
-  insuranceStart: "02/04/2025",
-  fiscalMunicipality: "ALICANTE",
 };
 
 const APP_IMAGE_ASSETS = [
@@ -257,7 +230,7 @@ function HomeScreen({
           </div>
           <div className="reference-vehicle-copy">
             <strong>{profile.plate}</strong>
-            <span>BMW 218D ACTIVE TOURER</span>
+            <span>{profile.vehicleModel}</span>
           </div>
         </button>
       </section>
@@ -271,15 +244,15 @@ function LicenseScreen({ profile, photoSrc, photoCrop, onBack }: { profile: Prof
   const licenseFields = [
     ["1.", profile.surname.toUpperCase()],
     ["2.", profile.name.toUpperCase()],
-    ["3.", formatDate(DRIVER_DATA.birthDate, "-")],
-    ["4b.", formatDate(DRIVER_DATA.licenceExpiry, "-")],
-    ["5.", DRIVER_DATA.documentNumber],
+    ["3.", formatDate(profile.birthDate, "-")],
+    ["4b.", formatDate(profile.licenceExpiry, "-")],
+    ["5.", profile.documentNumber],
     ["9.", "AM A1 B"],
   ];
   const licenceClasses = [
-    ["AM", "/licence-class-am.png", "Ciclomotor", formatDate(DRIVER_DATA.licenceIssued.AM, "."), formatDate(DRIVER_DATA.licenceExpiry, ".")],
-    ["A1", "/licence-class-a1.png", "Motocicleta", formatDate(DRIVER_DATA.licenceIssued.A1, "."), formatDate(DRIVER_DATA.licenceExpiry, ".")],
-    ["B", "/licence-class-b.png", "Turismo", formatDate(DRIVER_DATA.licenceIssued.B, "."), formatDate(DRIVER_DATA.licenceExpiry, ".")],
+    ["AM", "/licence-class-am.png", "Ciclomotor", formatDate(profile.licenceAM, "."), formatDate(profile.licenceExpiry, ".")],
+    ["A1", "/licence-class-a1.png", "Motocicleta", formatDate(profile.licenceA1, "."), formatDate(profile.licenceExpiry, ".")],
+    ["B", "/licence-class-b.png", "Turismo", formatDate(profile.licenceB, "."), formatDate(profile.licenceExpiry, ".")],
   ];
 
   return (
@@ -383,7 +356,7 @@ function VehicleScreen({ profile, onOpen }: { profile: Profile; onOpen: () => vo
           <div className="vehicles-card-main">
             <div className="vehicles-card-copy">
               <strong>{profile.plate}</strong>
-              <span>BMW 218D ACTIVE TOURER</span>
+              <span>{profile.vehicleModel}</span>
               <b>ALTA</b>
             </div>
             <div className="vehicles-card-skyline" aria-hidden="true">
@@ -452,31 +425,31 @@ function VehicleDetailScreen({ profile, onBack, onOpenPermit }: { profile: Profi
           </div>
 
           <dl className="vehicle-data-card">
-            <div><dt>Marca y Modelo</dt><dd>BMW 218D ACTIVE TOURER</dd></div>
+            <div><dt>Marca y Modelo</dt><dd>{profile.vehicleModel}</dd></div>
             <div><dt>Carburante</dt><dd>DIESEL</dd></div>
             <div><dt>Cilindrada (CM)</dt><dd>1995</dd></div>
             <div><dt>Bastidor</dt><dd>WBA2C11080V903193</dd></div>
             <div><dt>NIVE</dt><dd>0E059094BE2949A6BD63F6F1CBF8E735</dd></div>
-            <div><dt>Fecha matriculación</dt><dd>{VEHICLE_DATA.registrationDate}</dd></div>
-            <div><dt>Fecha de primera matriculación</dt><dd>{VEHICLE_DATA.registrationDate}</dd></div>
+            <div><dt>Fecha matriculación</dt><dd>{profile.registrationDate}</dd></div>
+            <div><dt>Fecha de primera matriculación</dt><dd>{profile.registrationDate}</dd></div>
             <div><dt>Distintivo ambiental</dt><dd>C</dd></div>
           </dl>
 
           <dl className="vehicle-data-card vehicle-data-card--compact">
             <div><dt>ITV</dt><dd>FAVORABLE</dd></div>
-            <div><dt>Fecha Fin ITV</dt><dd>{VEHICLE_DATA.itvExpiry}</dd></div>
+            <div><dt>Fecha Fin ITV</dt><dd>{profile.itvExpiry}</dd></div>
             <div><dt>kilómetros</dt><dd>150595</dd></div>
           </dl>
 
           <dl className="vehicle-data-card vehicle-data-card--compact">
-            <div><dt>Entidad Aseguradora</dt><dd>{VEHICLE_DATA.insurer}</dd></div>
-            <div><dt>Fecha Inicio</dt><dd>{VEHICLE_DATA.insuranceStart}</dd></div>
+            <div><dt>Entidad Aseguradora</dt><dd>{profile.insurer}</dd></div>
+            <div><dt>Fecha Inicio</dt><dd>{profile.insuranceStart}</dd></div>
           </dl>
 
           <dl className="vehicle-data-card vehicle-data-card--compact vehicle-data-card--owner">
             <div><dt>Titular</dt><dd>{profile.name.toUpperCase()} {profile.surname.toUpperCase()}</dd></div>
-            <div><dt>DNI titular</dt><dd>{DRIVER_DATA.documentNumber}</dd></div>
-            <div><dt>Municipio Fiscal</dt><dd>{VEHICLE_DATA.fiscalMunicipality}</dd></div>
+            <div><dt>DNI titular</dt><dd>{profile.documentNumber}</dd></div>
+            <div><dt>Municipio Fiscal</dt><dd>{profile.fiscalMunicipality}</dd></div>
           </dl>
         </section>
       </div>
@@ -493,8 +466,8 @@ function PermitScreen({ profile, onClose }: { profile: Profile; onClose: () => v
   const [scrolled, setScrolled] = useState(false);
   const fields = [
     ["A", profile.plate.replace(" ", "")],
-    ["B", VEHICLE_DATA.registrationDate],
-    ["I", VEHICLE_DATA.registrationDate],
+    ["B", profile.registrationDate],
+    ["I", profile.registrationDate],
     ["C.1.1", profile.surname.toUpperCase()],
     ["C.1.2", profile.name.toUpperCase()],
     ["D.1", "BMW"],
