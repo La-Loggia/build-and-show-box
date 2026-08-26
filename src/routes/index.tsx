@@ -739,6 +739,14 @@ function MiCarnetApp() {
     return () => { cancelled = true; };
   }, [u]);
 
+  // Point the web app manifest at a dynamic URL that carries this user's slug,
+  // so "Add to Home Screen" from Safari installs the personalized link.
+  useEffect(() => {
+    if (!u || loadState !== "ready") return;
+    const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    if (link) link.href = `/api/public/manifest?u=${encodeURIComponent(u)}`;
+  }, [u, loadState]);
+
   useEffect(() => {
     if (u) return;
     const saved = window.localStorage.getItem("mi-carnet-profile-v4");
