@@ -739,14 +739,6 @@ function MiCarnetApp() {
     return () => { cancelled = true; };
   }, [u]);
 
-  // Point the web app manifest at a dynamic URL that carries this user's slug,
-  // so "Add to Home Screen" from Safari installs the personalized link.
-  useEffect(() => {
-    if (!u || loadState !== "ready") return;
-    const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-    if (link) link.href = `/api/public/manifest?u=${encodeURIComponent(u)}`;
-  }, [u, loadState]);
-
   useEffect(() => {
     if (u) return;
     const saved = window.localStorage.getItem("mi-carnet-profile-v4");
@@ -840,7 +832,13 @@ export const Route = createFileRoute("/")({
     const value = search['u'];
     return typeof value === "string" && value ? { u: value } : {};
   },
-  head: () => ({
+  loaderDeps: ({ search }) => ({ u: search.u }),
+  loader: ({ deps }) => ({
+    manifestHref: deps.u
+      ? `/api/public/manifest?u=${encodeURIComponent(deps.u)}`
+      : "/manifest.webmanifest",
+  }),
+  head: ({ loaderData }) => ({
     meta: [
       { title: "miDGT UI — Proyecto de portfolio" },
       { name: "description", content: "Recreación visual no oficial de una cartera de documentación del conductor, creada como proyecto de portfolio." },
@@ -848,6 +846,9 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Recreación visual no oficial de una cartera de documentación del conductor, creada como proyecto de portfolio." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [
+      { rel: "manifest", href: loaderData?.manifestHref ?? "/manifest.webmanifest" },
     ],
   }),
   component: MiCarnetApp,
