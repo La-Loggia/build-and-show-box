@@ -25,7 +25,7 @@ export const DEFAULT_CARNET: CarnetData = {
   name: "Carlos",
   surname: "Medina",
   points: 13,
-  birthDate: "29/09/2006",
+  birthDate: "29/09/2005",
   documentNumber: "51255926N",
   licenceExpiry: "21/03/2035",
   licenceAM: "07/05/2022",
